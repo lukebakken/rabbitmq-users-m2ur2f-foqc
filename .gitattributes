@@ -1,0 +1,7 @@
+# https://www.git-scm.com/docs/gitattributes
+# ideas on settings taken from:
+# https://raw.githubusercontent.com/dotnet/roslyn/main/.gitattributes
+
+# Set default behavior to automatically normalize line endings.
+* text=auto encoding=UTF-8
+*.sh text eol=lf

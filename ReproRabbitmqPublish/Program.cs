@@ -42,6 +42,8 @@ namespace ReproRabbitmqPublish
 		static int Sending = 0;
 		static int Sent = 0;
 
+		const int DuplicateFactor = 5;
+
 		static void Main(string[] args)
 		{
 			// Test was run with latest RabbitMQ broker on a windows desktop, RabbitMQ 3.11.8 Erlang 25.2.2
@@ -56,20 +58,20 @@ namespace ReproRabbitmqPublish
 			ThreadPool.GetMinThreads(out var minThreads, out var minPorts);
 			Console.WriteLine($"Min {minThreads:N0} {minPorts:N0} Max {maxThreads:N0} {maxPorts:N0}");
 
-			// Setting min threads prevents timeouts
-			//ThreadPool.SetMinThreads(16 * Environment.ProcessorCount, 16 * Environment.ProcessorCount);
+			// Min threads must be MORE than number of simultaneous messages being sent (+ small overhead) or BlockingCell.WaitForValue will timeout
+			//ThreadPool.SetMinThreads(ReplayData.Count * DuplicateFactor + 10, minPorts);
 
 			// start sending messages
 			foreach (var message in ReplayData)
 			{
-				for (var duplicate = 0; duplicate < 5; duplicate++)
+				for (var duplicate = 0; duplicate < DuplicateFactor; duplicate++)
 				{
 					Task.Factory.StartNew(() => WaitAndDispatch(message, connection));
 				}
 			}
 
 			// Only exit if all were sent
-			while (Sent < (ReplayData.Count * 5))
+			while (Sent < (ReplayData.Count * DuplicateFactor))
 			{
 				Thread.Sleep(1);
 			}
@@ -78,7 +80,7 @@ namespace ReproRabbitmqPublish
 			Thread.Sleep(100);
 
 			Console.WriteLine();
-			Console.WriteLine("Done");
+			Console.WriteLine("Done, sent all messages!");
 			Console.ReadLine();
 		}
 
